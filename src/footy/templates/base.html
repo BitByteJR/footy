@@ -413,6 +413,83 @@
   .pill.live { background: var(--live); color: #fff; border-color: var(--live); }
   .pill.win { color: var(--win); border-color: rgba(15,212,114,0.4); }
 
+  /* ─── STANDINGS TABLE (shared by league + match pages) ─── */
+  .stable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .stable thead th {
+    text-align: right;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--fg-3);
+    padding: 12px 10px;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-1);
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  .stable thead th.l { text-align: left; }
+  .stable tbody td {
+    padding: 0 10px;
+    height: 44px;
+    vertical-align: middle;
+    text-align: right;
+    font-family: var(--f-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--fg-2);
+    border-bottom: 1px solid var(--line);
+  }
+  .stable tbody td.l { text-align: left; }
+  .stable tbody tr:hover { background: var(--bg-hover); }
+  .stable tbody tr:last-child td { border-bottom: 0; }
+  .stable .pos {
+    width: 36px; padding-left: 14px;
+    color: var(--fg-3);
+    font-weight: 600;
+  }
+  .stable tr.cl .pos { color: var(--accent); }
+  .stable tr.el .pos { color: var(--warn); }
+  .stable tr.relegation .pos { color: var(--loss); }
+  .stable .team-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 44px;
+    font-family: var(--f);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--fg);
+    white-space: nowrap;
+    line-height: 1;
+  }
+  .stable .team-cell > .crest { flex-shrink: 0; }
+  .stable .pts {
+    color: var(--fg);
+    font-weight: 700;
+    padding-right: 14px;
+  }
+  .stable tr.cl .pts { color: var(--accent); }
+  .stable .gd.plus { color: var(--win); }
+  .stable .gd.minus { color: var(--loss); }
+  .stable .form {
+    display: flex; gap: 2px; justify-content: flex-end;
+  }
+  .stable .form .f {
+    width: 14px; height: 14px;
+    display: inline-grid; place-items: center;
+    font-family: var(--f-mono);
+    font-size: 9px;
+    font-weight: 700;
+    border-radius: 2px;
+  }
+  .stable .form .f.W { background: var(--win); color: #002a14; }
+  .stable .form .f.D { background: var(--warn); color: #3b2700; }
+  .stable .form .f.L { background: var(--loss); color: #fff; }
+
   /* ─── SCROLLBAR ─── */
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
