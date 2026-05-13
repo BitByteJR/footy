@@ -30,6 +30,8 @@ services:
       # Inside the compose network the DB hostname is the service name `postgres`,
       # not localhost — and the port is 5432 (host port mapping doesn't apply here).
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-footy}:${POSTGRES_PASSWORD:-footy_dev_password}@postgres:5432/${POSTGRES_DB:-footy}
+      # Needed for lazy-loading match details (goals + bookings) on /match/{id}.
+      FOOTBALL_DATA_TOKEN: ${FOOTBALL_DATA_TOKEN:-}
     ports:
       - "${API_PORT:-8000}:8000"
     depends_on:

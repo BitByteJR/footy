@@ -88,12 +88,21 @@
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   gap: 0;
+  align-items: start;  /* don't stretch the short right column to the tall left one */
 }
-.col-2 > section { border-right: 1px solid var(--line); }
-.col-2 > aside { background: var(--bg); }
+.col-2 > section { border-right: 1px solid var(--line); min-width: 0; }
+.col-2 > aside {
+  background: var(--bg);
+  position: sticky;
+  top: var(--hdr-h);
+  align-self: start;
+  max-height: calc(100vh - var(--hdr-h));
+  overflow-y: auto;
+}
 @media (max-width: 1000px) {
   .col-2 { grid-template-columns: 1fr; }
   .col-2 > section { border-right: 0; }
+  .col-2 > aside { position: static; max-height: none; }
 }
 
 /* standings table */
