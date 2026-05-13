@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Premier League · 2025-26 — footy</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #0d1117;
+    --bg-2:    #161c26;
+    --bg-3:    #1f2733;
+    --line:    #232b38;
+    --line-2:  #2c3543;
+    --fg:      #eef2f8;
+    --fg-2:    #aab3c2;
+    --fg-3:    #6f7888;
+    --accent:  #00d563;
+    --accent-2:#37003c;
+    --red:     #ff4654;
+    --pl:      #38003c;
+    --pl-2:    #4d0061;
+    --f:       "Space Grotesk", system-ui, sans-serif;
+    --f-mono:  "JetBrains Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--f);
+    font-size: 15px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent); color: #000; }
+
+  .wrap { max-width: 1480px; margin: 0 auto; padding: 0 32px; }
+
+  /* ===== header ===== */
+  .topbar {
+    background: linear-gradient(90deg, var(--pl) 0%, var(--pl-2) 60%, transparent 100%);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar-inner {
+    display: flex; align-items: center; gap: 24px;
+    padding: 22px 0;
+  }
+  .pl-mark {
+    width: 56px; height: 56px;
+    background: #fff;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    font-family: var(--f);
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--pl);
+    letter-spacing: -0.04em;
+    flex-shrink: 0;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .topbar h1 small {
+    display: block;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--fg-2);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .topbar-spacer { flex: 1; }
+  .topbar-stat {
+    text-align: right;
+    border-left: 1px solid rgba(255,255,255,0.12);
+    padding-left: 24px;
+  }
+  .topbar-stat .v {
+    font-family: var(--f);
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .topbar-stat .l {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--fg-2);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    margin-top: 6px;
+  }
+
+  /* ===== leaders hero (top 3) ===== */
+  .leaders {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin: 32px 0;
+  }
+  .leader {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    padding: 26px 28px;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .leader::before {
+    content: attr(data-rank);
+    position: absolute;
+    right: 14px; top: 6px;
+    font-family: var(--f);
+    font-size: 96px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.04);
+    letter-spacing: -0.06em;
+    line-height: 1;
+  }
+  .leader[data-rank="1"] { border-color: var(--accent); }
+  .leader[data-rank="1"]::before { color: rgba(0, 213, 99, 0.08); }
+  .crest-lg {
+    width: 76px; height: 76px;
+    background: #fff;
+    border-radius: 4px;
+    padding: 6px;
+    flex-shrink: 0;
+    display: grid; place-items: center;
+  }
+  .crest-lg img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .crest-lg .fallback { font-family: var(--f-mono); font-weight: 700; color: var(--pl); font-size: 18px; }
+  .leader .name {
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  .leader .pts {
+    font-family: var(--f);
+    font-size: 42px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--accent);
+    margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .leader .pts small {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    color: var(--fg-3);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-left: 6px;
+  }
+  .leader .gd {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    color: var(--fg-2);
+    margin-top: 4px;
+    letter-spacing: 0.04em;
+  }
+
+  /* ===== two-column body ===== */
+  .grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+    padding-bottom: 48px;
+  }
+
+  /* ===== section title ===== */
+  .sect {
+    margin: 18px 0 14px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .sect h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .sect h2 .pill {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    color: var(--accent);
+    background: rgba(0, 213, 99, 0.1);
+    border: 1px solid rgba(0, 213, 99, 0.3);
+    padding: 3px 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+  .sect .meta {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--fg-3);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  /* ===== standings table ===== */
+  .standings {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    overflow: hidden;
+  }
+  .stbl {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .stbl thead th {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--fg-3);
+    text-align: right;
+    padding: 14px 12px;
+    border-bottom: 1px solid var(--line-2);
+    background: var(--bg-3);
+  }
+  .stbl thead th.tx-l { text-align: left; padding-left: 18px; }
+  .stbl tbody tr {
+    border-bottom: 1px solid var(--line);
+    transition: background 0.12s;
+  }
+  .stbl tbody tr:hover { background: var(--bg-3); }
+  .stbl tbody tr:last-child { border-bottom: 0; }
+  .stbl tbody td {
+    padding: 0 12px;
+    height: 56px;
+    vertical-align: middle;
+    text-align: right;
+    font-family: var(--f-mono);
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    color: var(--fg-2);
+  }
+  .stbl tbody td.tx-l { text-align: left; }
+  .stbl .col-rank {
+    width: 50px;
+    color: var(--fg-3);
+    padding-left: 18px;
+    font-weight: 600;
+  }
+  .stbl tr.top-4 .col-rank { color: var(--accent); }
+  .stbl tr.relegation .col-rank { color: var(--red); }
+  .stbl .col-team {
+    display: flex; align-items: center; gap: 14px;
+    height: 56px;
+    font-family: var(--f);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--fg);
+    letter-spacing: -0.005em;
+  }
+  .crest-sm {
+    width: 30px; height: 30px;
+    background: #fff;
+    border-radius: 4px;
+    padding: 3px;
+    flex-shrink: 0;
+    display: grid; place-items: center;
+  }
+  .crest-sm img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .crest-sm .fallback {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--pl);
+  }
+  .stbl .col-pts {
+    color: var(--fg);
+    font-weight: 700;
+    font-size: 16px;
+    padding-right: 18px;
+  }
+  .stbl tr.top-4 .col-pts { color: var(--accent); }
+  .stbl .col-gd.plus { color: var(--accent); }
+  .stbl .col-gd.minus { color: var(--red); }
+
+  /* ===== top results ===== */
+  .results {
+    margin-top: 8px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .match {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    padding: 16px 18px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 14px;
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .match:hover { border-color: var(--line-2); background: var(--bg-3); }
+  .match .side {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+  .match .side.away { flex-direction: row-reverse; text-align: right; }
+  .match .side .nm {
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .match .side.win .nm { color: var(--accent); }
+  .match .score {
+    font-family: var(--f);
+    font-size: 32px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+    color: var(--fg);
+    text-align: center;
+    line-height: 1;
+    min-width: 80px;
+  }
+  .match .score .sep {
+    color: var(--fg-3);
+    font-weight: 400;
+    margin: 0 4px;
+  }
+  .crest-md {
+    width: 44px; height: 44px;
+    background: #fff;
+    border-radius: 6px;
+    padding: 4px;
+    flex-shrink: 0;
+    display: grid; place-items: center;
+  }
+  .crest-md img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .crest-md .fallback {
+    font-family: var(--f-mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--pl);
+  }
+
+  /* ===== top scorer side card ===== */
+  .scorer-hero {
+    background: linear-gradient(180deg, var(--bg-2) 0%, var(--bg-3) 100%);
+    border: 1px solid var(--line);
+    overflow: hidden;
+    position: relative;
+  }
+  .scorer-hero .label {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    color: var(--accent);
+    background: rgba(0,213,99,0.1);
+    border-bottom: 1px solid rgba(0,213,99,0.3);
+    padding: 10px 18px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    text-align: center;
+  }
+  .scorer-photo {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: var(--bg-3);
+    overflow: hidden;
+    position: relative;
+  }
+  .scorer-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+  }
+  .scorer-photo .empty {
+    width: 100%; height: 100%;
+    display: grid; place-items: center;
+    font-family: var(--f-mono);
+    color: var(--fg-3);
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .scorer-photo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 50%, rgba(13,17,23,0.95) 100%);
+    pointer-events: none;
+  }
+  .scorer-body {
+    padding: 24px 24px 26px;
+    position: relative;
+  }
+  .scorer-name {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 14px;
+  }
+  .scorer-club {
+    display: flex; align-items: center; gap: 10px;
+    color: var(--fg-2);
+    font-size: 14px;
+    margin-bottom: 22px;
+  }
+  .scorer-stats {
+    display: flex; align-items: baseline; gap: 14px;
+  }
+  .scorer-stats .big {
+    font-family: var(--f);
+    font-size: 64px;
+    font-weight: 700;
+    line-height: 0.9;
+    color: var(--accent);
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+  }
+  .scorer-stats .unit {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    color: var(--fg-3);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .scorer-stats .unit b {
+    display: block;
+    color: var(--fg);
+    font-weight: 500;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    margin-bottom: 2px;
+  }
+
+  /* ===== rest of scorers list ===== */
+  .scorer-list {
+    margin-top: 18px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+  }
+  .scorer-list-head {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--fg-3);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .scorer-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .scorer-item:last-child { border-bottom: 0; }
+  .scorer-rank {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    color: var(--fg-3);
+    font-weight: 600;
+    width: 22px;
+    flex-shrink: 0;
+  }
+  .scorer-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--bg-3);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .scorer-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+  .scorer-avatar.empty { display: grid; place-items: center; font-family: var(--f-mono); font-size: 12px; color: var(--fg-3); }
+  .scorer-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .scorer-info .nm {
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .scorer-info .cl {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--fg-3);
+    margin-top: 2px;
+    letter-spacing: 0.04em;
+  }
+  .scorer-goals {
+    font-family: var(--f);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  /* ===== footer ===== */
+  .footer {
+    padding: 28px 0 48px;
+    border-top: 1px solid var(--line);
+    margin-top: 32px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--fg-3);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+
+  /* ===== responsive ===== */
+  @media (max-width: 1180px) {
+    .leaders { grid-template-columns: 1fr; }
+    .leader::before { font-size: 80px; }
+  }
+  @media (max-width: 980px) {
+    .grid { grid-template-columns: 1fr; }
+    .results { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .wrap { padding: 0 16px; }
+    .topbar h1 { font-size: 22px; }
+    .pl-mark { width: 44px; height: 44px; font-size: 18px; }
+    .topbar-stat { padding-left: 14px; }
+    .topbar-stat .v { font-size: 20px; }
+    .leader { padding: 20px; }
+    .leader .pts { font-size: 36px; }
+    .stbl thead th, .stbl tbody td { padding-left: 8px; padding-right: 8px; height: 48px; }
+    .stbl .col-rank { padding-left: 12px; width: 36px; }
+    .stbl .col-pts { padding-right: 12px; }
+    .col-played, .col-w, .col-d, .col-l, .col-ga, .col-gf { display: none; }
+    .match { padding: 12px; gap: 8px; }
+    .match .score { font-size: 26px; min-width: 70px; }
+    .scorer-name { font-size: 22px; }
+    .scorer-stats .big { font-size: 52px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <div class="pl-mark">PL</div>
+    <h1>Premier League
+      <small>{{ competition.name }} · 2025-26</small>
+    </h1>
+    <div class="topbar-spacer"></div>
+    <div class="topbar-stat">
+      <div class="v">{{ standings|length }}</div>
+      <div class="l">Clubs</div>
+    </div>
+    <div class="topbar-stat">
+      <div class="v">{{ matches_played }}</div>
+      <div class="l">Matches played</div>
+    </div>
+    <div class="topbar-stat">
+      <div class="v">{{ top_scorer.goals if top_scorer else 0 }}</div>
+      <div class="l">Top scorer</div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  {# leaders hero — top 3 #}
+  <section class="leaders">
+    {% for s in standings[:3] %}
+    <article class="leader" data-rank="{{ s.rank }}">
+      <div class="crest-lg">
+        {% if s.team.crest_url %}<img src="{{ s.team.crest_url }}" alt="{{ s.team.name }}">
+        {% else %}<span class="fallback">{{ s.team.tla or s.team.name[:3]|upper }}</span>{% endif %}
+      </div>
+      <div>
+        <div class="name">{{ s.team.name }}</div>
+        <div class="pts">{{ s.points }}<small>PTS</small></div>
+        <div class="gd">P {{ s.played }} · W {{ s.won }} · GD {{ '%+d' % s.gd }}</div>
+      </div>
+    </article>
+    {% endfor %}
+  </section>
+
+  <div class="grid">
+
+    {# left column — standings + top results #}
+    <div>
+
+      <div class="sect">
+        <h2>Standings <span class="pill">Live</span></h2>
+        <div class="meta">2025-26 · sorted by points</div>
+      </div>
+
+      <div class="standings">
+        <table class="stbl">
+          <thead>
+            <tr>
+              <th class="tx-l">#</th>
+              <th class="tx-l">Club</th>
+              <th class="col-played">P</th>
+              <th class="col-w">W</th>
+              <th class="col-d">D</th>
+              <th class="col-l">L</th>
+              <th class="col-gf">GF</th>
+              <th class="col-ga">GA</th>
+              <th>GD</th>
+              <th>Pts</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in standings %}
+            <tr class="{% if s.rank <= 4 %}top-4{% elif s.rank >= 18 %}relegation{% endif %}">
+              <td class="col-rank tx-l">{{ s.rank }}</td>
+              <td class="tx-l">
+                <div class="col-team">
+                  <div class="crest-sm">
+                    {% if s.team.crest_url %}<img src="{{ s.team.crest_url }}" alt="">
+                    {% else %}<span class="fallback">{{ s.team.tla or s.team.name[:3]|upper }}</span>{% endif %}
+                  </div>
+                  {{ s.team.name }}
+                </div>
+              </td>
+              <td class="col-played">{{ s.played }}</td>
+              <td class="col-w">{{ s.won }}</td>
+              <td class="col-d">{{ s.drawn }}</td>
+              <td class="col-l">{{ s.lost }}</td>
+              <td class="col-gf">{{ s.gf }}</td>
+              <td class="col-ga">{{ s.ga }}</td>
+              <td class="col-gd {% if s.gd > 0 %}plus{% elif s.gd < 0 %}minus{% endif %}">{{ '%+d' % s.gd }}</td>
+              <td class="col-pts">{{ s.points }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if big_matches %}
+      <div class="sect">
+        <h2>Top fixtures</h2>
+        <div class="meta">Top-6 head-to-heads · 2025-26</div>
+      </div>
+      <div class="results">
+        {% for m in big_matches %}
+        <article class="match">
+          <div class="side {% if m.home_score > m.away_score %}win{% endif %}">
+            <div class="crest-md">
+              {% if m.home_team.crest_url %}<img src="{{ m.home_team.crest_url }}" alt="">
+              {% else %}<span class="fallback">{{ m.home_team.tla or m.home_team.name[:3]|upper }}</span>{% endif %}
+            </div>
+            <div class="nm">{{ m.home_team.name }}</div>
+          </div>
+          <div class="score">{{ m.home_score }}<span class="sep">–</span>{{ m.away_score }}</div>
+          <div class="side away {% if m.away_score > m.home_score %}win{% endif %}">
+            <div class="crest-md">
+              {% if m.away_team.crest_url %}<img src="{{ m.away_team.crest_url }}" alt="">
+              {% else %}<span class="fallback">{{ m.away_team.tla or m.away_team.name[:3]|upper }}</span>{% endif %}
+            </div>
+            <div class="nm">{{ m.away_team.name }}</div>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+    </div>
+
+    {# right column — top scorer #}
+    <aside>
+
+      <div class="sect">
+        <h2>Top scorer</h2>
+        <div class="meta">Golden Boot</div>
+      </div>
+
+      {% if top_scorer %}
+      <div class="scorer-hero">
+        <div class="label">Premier League Top Scorer</div>
+        <div class="scorer-photo">
+          {% if top_scorer.photo_url %}
+          <img src="{{ top_scorer.photo_url }}" alt="{{ top_scorer.player_name }}">
+          {% else %}
+          <div class="empty">no photo</div>
+          {% endif %}
+        </div>
+        <div class="scorer-body">
+          <div class="scorer-name">{{ top_scorer.player_name }}</div>
+          {% if top_scorer.team_obj %}
+          <div class="scorer-club">
+            <div class="crest-sm">
+              {% if top_scorer.team_obj.crest_url %}<img src="{{ top_scorer.team_obj.crest_url }}" alt="">
+              {% else %}<span class="fallback">{{ top_scorer.team_obj.tla }}</span>{% endif %}
+            </div>
+            {{ top_scorer.team_obj.name }}
+          </div>
+          {% endif %}
+          <div class="scorer-stats">
+            <span class="big">{{ top_scorer.goals }}</span>
+            <span class="unit"><b>Goals</b>this season</span>
+          </div>
+        </div>
+      </div>
+
+      {% if other_scorers %}
+      <div class="scorer-list">
+        <div class="scorer-list-head">Chasing the boot</div>
+        {% for sc in other_scorers %}
+        <div class="scorer-item">
+          <div class="scorer-rank">{{ loop.index + 1 }}</div>
+          <div class="scorer-avatar {% if not sc.photo_url %}empty{% endif %}">
+            {% if sc.photo_url %}<img src="{{ sc.photo_url }}" alt="">
+            {% else %}{{ sc.player_name[:1] }}{% endif %}
+          </div>
+          <div class="scorer-info">
+            <div class="nm">{{ sc.player_name }}</div>
+            <div class="cl">{{ sc.team_obj.name if sc.team_obj else 'unknown' }}</div>
+          </div>
+          <div class="scorer-goals">{{ sc.goals }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endif %}
+
+    </aside>
+  </div>
+
+  <footer class="footer">
+    <div>Source · <a href="https://en.wikipedia.org/wiki/2025%E2%80%9326_Premier_League" target="_blank">Wikipedia 2025-26 Premier League</a></div>
+    <div>footy · pet project · github.com/BitByteJR/footy</div>
+  </footer>
+
+</main>
+
+</body>
+</html>
