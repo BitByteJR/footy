@@ -1,0 +1,26 @@
+# Local development stack for footy.
+# Single service for now (Postgres). Later phases will add the API and workers here.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: footy-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-footy}
+      POSTGRES_USER: ${POSTGRES_USER:-footy}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-footy_dev_password}
+    ports:
+      # Override POSTGRES_PORT in .env if 5432 is already taken on the host.
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-footy} -d ${POSTGRES_DB:-footy}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
+    name: footy_postgres_data

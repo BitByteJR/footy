@@ -39,3 +39,29 @@ hooks-run:
 
 # Local CI: what GitHub Actions will run later
 ci: lint format-check test
+
+# --- Docker / database (Phase 1) ---
+
+# Start the local stack (Postgres) in background
+db-up:
+    docker compose up -d
+
+# Stop the stack, keep data volume
+db-down:
+    docker compose down
+
+# Drop the stack AND wipe Postgres data (destructive)
+db-reset:
+    docker compose down -v
+
+# Tail Postgres logs (Ctrl+C to exit)
+db-logs:
+    docker compose logs -f postgres
+
+# Open a psql shell inside the Postgres container
+db-shell:
+    docker compose exec postgres psql -U footy -d footy
+
+# Show container status / health
+db-status:
+    docker compose ps
