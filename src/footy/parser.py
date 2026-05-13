@@ -48,13 +48,13 @@ def sync_competitions(
             session.add(
                 Competition(
                     id=item["id"],
-                    code=item.get("code") or "",
+                    code=item.get("code") or None,
                     name=item["name"],
                     area_name=area_name,
                 )
             )
         else:
-            comp.code = item.get("code") or ""
+            comp.code = item.get("code") or None
             comp.name = item["name"]
             comp.area_name = area_name
     session.commit()

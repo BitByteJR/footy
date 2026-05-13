@@ -101,3 +101,7 @@ app-rebuild:
 # Tail API logs (Ctrl+C to exit)
 app-logs:
     docker compose logs -f api
+
+# Pull competitions from football-data.org into the DB (uses .env's DATABASE_URL)
+sync:
+    uv run footy

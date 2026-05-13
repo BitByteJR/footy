@@ -20,6 +20,6 @@ def health() -> dict[str, str]:
 @app.get("/competitions")
 def list_competitions(
     session: Annotated[Session, Depends(get_session)],
-) -> list[dict[str, str | int]]:
+) -> list[dict[str, str | int | None]]:
     rows = session.scalars(select(Competition).order_by(Competition.code)).all()
     return [{"id": c.id, "code": c.code, "name": c.name, "area": c.area_name} for c in rows]
