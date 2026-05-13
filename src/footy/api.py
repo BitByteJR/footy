@@ -1,21 +1,27 @@
-"""FastAPI application."""
+"""FastAPI application — bookmaker-style football data UI."""
+
+from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import and_, or_, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from footy.db import get_session
-from footy.models import Competition, Match, Scorer, Team
+from footy.fdo import LEAGUE_COLOR, TOP_LEAGUES
+from footy.models import Competition, Goal, Match, Scorer, Standing, Team
+from footy.sync import sync_match_detail
 
-app = FastAPI(title="footy", version="0.1.0")
+app = FastAPI(title="footy", version="0.2.0")
 
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+templates.env.globals["LEAGUE_COLOR"] = LEAGUE_COLOR
 
 
 @app.get("/health")
@@ -31,145 +37,374 @@ def list_competitions(
     return [{"id": c.id, "code": c.code, "name": c.name, "area": c.area_name} for c in rows]
 
 
+# ─── helpers ────────────────────────────────────────────────────────────────
+
+
 @dataclass
-class StandingRow:
-    rank: int
-    team: Team
-    played: int
-    won: int
-    drawn: int
-    lost: int
-    gf: int
-    ga: int
-    gd: int
-    points: int
+class MatchGroup:
+    """Matches grouped for the index/league feed."""
+
+    label: str  # e.g. "Сегодня, 13 мая" or "Завтра"
+    date_key: str  # "2026-05-13"
+    competition: Competition
+    matches: list[Match]
 
 
-def _compute_standings(teams: list[Team], matches: list[Match]) -> list[StandingRow]:
-    """Derive standings from FINISHED matches. PL: 3pts win / 1 draw / 0 loss."""
-    stats: dict[int, dict] = {
-        t.id: {"team": t, "p": 0, "w": 0, "d": 0, "l": 0, "gf": 0, "ga": 0, "pts": 0} for t in teams
-    }
-    for m in matches:
-        if m.status != "FINISHED" or m.home_score is None or m.away_score is None:
-            continue
-        h, a = stats.get(m.home_team_id), stats.get(m.away_team_id)
-        if h is None or a is None:
-            continue
-        h["p"] += 1
-        a["p"] += 1
-        h["gf"] += m.home_score
-        h["ga"] += m.away_score
-        a["gf"] += m.away_score
-        a["ga"] += m.home_score
-        if m.home_score > m.away_score:
-            h["w"] += 1
-            a["l"] += 1
-            h["pts"] += 3
-        elif m.home_score < m.away_score:
-            a["w"] += 1
-            h["l"] += 1
-            a["pts"] += 3
-        else:
-            h["d"] += 1
-            a["d"] += 1
-            h["pts"] += 1
-            a["pts"] += 1
+RU_WEEKDAY = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+RU_MONTH = [
+    "",
+    "января",
+    "февраля",
+    "марта",
+    "апреля",
+    "мая",
+    "июня",
+    "июля",
+    "августа",
+    "сентября",
+    "октября",
+    "ноября",
+    "декабря",
+]
 
-    rows = [
-        StandingRow(
-            rank=0,
-            team=s["team"],
-            played=s["p"],
-            won=s["w"],
-            drawn=s["d"],
-            lost=s["l"],
-            gf=s["gf"],
-            ga=s["ga"],
-            gd=s["gf"] - s["ga"],
-            points=s["pts"],
+
+def ru_date_label(d: datetime) -> str:
+    today = datetime.now(UTC).date()
+    target = d.date()
+    if target == today:
+        return f"Сегодня · {target.day} {RU_MONTH[target.month]}"
+    if target == today + timedelta(days=1):
+        return f"Завтра · {target.day} {RU_MONTH[target.month]}"
+    if target == today - timedelta(days=1):
+        return f"Вчера · {target.day} {RU_MONTH[target.month]}"
+    return f"{RU_WEEKDAY[target.weekday()]} · {target.day} {RU_MONTH[target.month]}"
+
+
+templates.env.filters["ru_date"] = ru_date_label
+
+
+def ru_time(d: datetime | None) -> str:
+    if d is None:
+        return "—"
+    return d.strftime("%H:%M")
+
+
+templates.env.filters["ru_time"] = ru_time
+
+
+def _top_competitions(session: Session) -> list[Competition]:
+    """Return the top leagues in our preferred display order."""
+    by_code = {c.code: c for c in session.scalars(select(Competition)).all() if c.code}
+    return [by_code[c] for c in TOP_LEAGUES if c in by_code]
+
+
+def _leagues_summary(session: Session) -> list[dict]:
+    """For the sidebar list — top leagues with current matchday + colour."""
+    out = []
+    for c in _top_competitions(session):
+        out.append(
+            {
+                "code": c.code,
+                "name": c.name,
+                "matchday": c.current_matchday,
+                "color": LEAGUE_COLOR.get(c.code or "", "#1a1f29"),
+                "emblem_url": c.emblem_url,
+            }
         )
-        for s in stats.values()
-    ]
-    rows.sort(key=lambda r: (-r.points, -r.gd, -r.gf, r.team.name))
-    for i, r in enumerate(rows, 1):
-        r.rank = i
-    return rows
+    return out
 
 
-def _attach_team_to_scorers(scorers: list[Scorer], teams_by_id: dict[int, Team]) -> None:
-    """Add a `team_obj` attribute to each scorer for template convenience."""
-    for sc in scorers:
-        sc.team_obj = teams_by_id.get(sc.team_id) if sc.team_id else None  # type: ignore[attr-defined]
+# ─── routes ─────────────────────────────────────────────────────────────────
 
 
-@app.get("/premier-league", response_class=HTMLResponse)
-def premier_league(
+@app.get("/", response_class=HTMLResponse)
+def index(
     request: Request,
     session: Annotated[Session, Depends(get_session)],
 ) -> HTMLResponse:
-    pl = session.scalar(select(Competition).where(Competition.code == "PL"))
-    if pl is None:
-        raise HTTPException(status_code=503, detail="Run `uv run footy pl` first to load data.")
+    leagues = _top_competitions(session)
+    league_ids = [c.id for c in leagues]
 
-    teams = list(session.scalars(select(Team).where(Team.competition_id == pl.id)).all())
-    if not teams:
-        raise HTTPException(status_code=503, detail="No PL data yet. Run `uv run footy pl`.")
-    teams_by_id = {t.id: t for t in teams}
+    now = datetime.now(UTC)
+    horizon = now + timedelta(days=14)
 
-    matches = list(
+    upcoming = list(
         session.scalars(
             select(Match)
-            .where(Match.competition_id == pl.id)
+            .where(
+                Match.competition_id.in_(league_ids),
+                Match.status.in_(("SCHEDULED", "TIMED", "POSTPONED")),
+                Match.utc_date.is_not(None),
+                Match.utc_date <= horizon,
+            )
             .options(selectinload(Match.home_team), selectinload(Match.away_team))
+            .order_by(Match.utc_date)
+            .limit(60)
         ).all()
     )
-    standings = _compute_standings(teams, matches)
 
-    # "Top results" — finished matches between the top 6 teams.
-    top6_ids = {s.team.id for s in standings[:6]}
-    big_matches = [
-        m
-        for m in matches
-        if m.status == "FINISHED" and m.home_team_id in top6_ids and m.away_team_id in top6_ids
-    ][-8:]
-
-    # Upcoming — scheduled matches involving top-12 teams (showcase fixtures first),
-    # falling back to any remaining scheduled if there aren't 8 from the top.
-    top12_ids = {s.team.id for s in standings[:12]}
-    scheduled = [m for m in matches if m.status == "SCHEDULED"]
-    upcoming_priority = [
-        m for m in scheduled if m.home_team_id in top12_ids and m.away_team_id in top12_ids
-    ]
-    upcoming_rest = [m for m in scheduled if m not in upcoming_priority]
-    upcoming_matches = (upcoming_priority + upcoming_rest)[:8]
-
-    scorers = list(
+    recent = list(
         session.scalars(
-            select(Scorer).where(Scorer.competition_id == pl.id).order_by(Scorer.goals.desc())
+            select(Match)
+            .where(
+                Match.competition_id.in_(league_ids),
+                Match.status == "FINISHED",
+                Match.utc_date.is_not(None),
+            )
+            .options(selectinload(Match.home_team), selectinload(Match.away_team))
+            .order_by(Match.utc_date.desc())
+            .limit(10)
         ).all()
     )
-    _attach_team_to_scorers(scorers, teams_by_id)
+
+    # Top 4 featured — pick a mix of leagues if possible.
+    featured: list[Match] = []
+    used_codes: set[str] = set()
+    for m in upcoming:
+        code = next(c.code for c in leagues if c.id == m.competition_id)
+        if code not in used_codes:
+            featured.append(m)
+            used_codes.add(code)
+        if len(featured) >= 4:
+            break
+    if len(featured) < 4:
+        for m in upcoming:
+            if m in featured:
+                continue
+            featured.append(m)
+            if len(featured) >= 4:
+                break
+
+    # Group upcoming by (date, competition) for the feed.
+    groups: list[MatchGroup] = []
+    by_key: dict[tuple[str, int], MatchGroup] = {}
+    comp_by_id = {c.id: c for c in leagues}
+    for m in upcoming:
+        if m in featured:
+            continue
+        date_key = m.utc_date.strftime("%Y-%m-%d") if m.utc_date else "tba"
+        key = (date_key, m.competition_id)
+        if key not in by_key:
+            grp = MatchGroup(
+                label=ru_date_label(m.utc_date) if m.utc_date else "Дата уточняется",
+                date_key=date_key,
+                competition=comp_by_id[m.competition_id],
+                matches=[],
+            )
+            by_key[key] = grp
+            groups.append(grp)
+        by_key[key].matches.append(m)
 
     return templates.TemplateResponse(
         request=request,
-        name="premier_league.html",
+        name="index.html",
         context={
-            "competition": pl,
+            "leagues_sidebar": _leagues_summary(session),
+            "featured": featured,
+            "groups": groups,
+            "recent": recent,
+            "league_color": LEAGUE_COLOR,
+        },
+    )
+
+
+@app.get("/league/{code}", response_class=HTMLResponse)
+def league_page(
+    code: str,
+    request: Request,
+    session: Annotated[Session, Depends(get_session)],
+    tab: str = "matches",
+) -> HTMLResponse:
+    comp = session.scalar(select(Competition).where(Competition.code == code.upper()))
+    if comp is None:
+        raise HTTPException(status_code=404, detail=f"Competition {code} not synced")
+
+    standings = list(
+        session.scalars(
+            select(Standing)
+            .where(Standing.competition_id == comp.id)
+            .options(selectinload(Standing.team))
+            .order_by(Standing.position)
+        ).all()
+    )
+
+    now = datetime.now(UTC)
+    upcoming = list(
+        session.scalars(
+            select(Match)
+            .where(
+                Match.competition_id == comp.id,
+                Match.utc_date.is_not(None),
+                Match.utc_date >= now,
+                Match.status != "FINISHED",
+            )
+            .options(selectinload(Match.home_team), selectinload(Match.away_team))
+            .order_by(Match.utc_date)
+            .limit(20)
+        ).all()
+    )
+
+    recent = list(
+        session.scalars(
+            select(Match)
+            .where(
+                Match.competition_id == comp.id,
+                Match.status == "FINISHED",
+            )
+            .options(selectinload(Match.home_team), selectinload(Match.away_team))
+            .order_by(Match.utc_date.desc())
+            .limit(15)
+        ).all()
+    )
+
+    last_match = recent[0] if recent else None
+    last_match_goals: list[Goal] = []
+    if last_match is not None:
+        # Lazy-fetch detail for the very latest match (cheap, single API call).
+        if not last_match.detail_fetched:
+            try:
+                sync_match_detail(session, last_match.id)
+                # refresh from DB
+                last_match = session.get(Match, last_match.id) or last_match
+            except Exception:
+                pass
+        last_match_goals = list(
+            session.scalars(
+                select(Goal).where(Goal.match_id == last_match.id).order_by(Goal.minute)
+            ).all()
+        )
+
+    scorers = list(
+        session.scalars(
+            select(Scorer)
+            .where(Scorer.competition_id == comp.id)
+            .order_by(Scorer.goals.desc())
+            .limit(10)
+        ).all()
+    )
+    teams_by_id = {
+        t.id: t for t in session.scalars(select(Team).where(Team.competition_id == comp.id)).all()
+    }
+    for sc in scorers:
+        sc.team_obj = teams_by_id.get(sc.team_id) if sc.team_id else None  # type: ignore[attr-defined]
+
+    return templates.TemplateResponse(
+        request=request,
+        name="league.html",
+        context={
+            "leagues_sidebar": _leagues_summary(session),
+            "competition": comp,
+            "color": LEAGUE_COLOR.get(comp.code or "", "#1a1f29"),
+            "tab": tab,
             "standings": standings,
-            "matches_played": sum(s.played for s in standings) // 2,
-            "matches_scheduled": len(scheduled),
-            "big_matches": big_matches,
-            "upcoming_matches": upcoming_matches,
-            "top_scorer": scorers[0] if scorers else None,
-            "other_scorers": scorers[1:8],
+            "upcoming": upcoming,
+            "recent": recent,
+            "last_match": last_match,
+            "last_match_goals": last_match_goals,
+            "scorers": scorers,
+        },
+    )
+
+
+@app.get("/match/{match_id}", response_class=HTMLResponse)
+def match_page(
+    match_id: int,
+    request: Request,
+    session: Annotated[Session, Depends(get_session)],
+) -> HTMLResponse:
+    match = session.scalar(
+        select(Match)
+        .where(Match.id == match_id)
+        .options(
+            selectinload(Match.home_team),
+            selectinload(Match.away_team),
+            selectinload(Match.goals),
+            selectinload(Match.bookings),
+        )
+    )
+    if match is None:
+        raise HTTPException(status_code=404, detail="Match not found")
+
+    if not match.detail_fetched:
+        try:
+            sync_match_detail(session, match.id)
+            match = (
+                session.scalar(
+                    select(Match)
+                    .where(Match.id == match_id)
+                    .options(
+                        selectinload(Match.home_team),
+                        selectinload(Match.away_team),
+                        selectinload(Match.goals),
+                        selectinload(Match.bookings),
+                    )
+                )
+                or match
+            )
+        except Exception:
+            pass
+
+    comp = session.get(Competition, match.competition_id)
+
+    # Form: last 5 finished matches for each team
+    home_form = _team_form(session, match.home_team_id, match.competition_id)
+    away_form = _team_form(session, match.away_team_id, match.competition_id)
+
+    # Head-to-head
+    h2h = list(
+        session.scalars(
+            select(Match)
+            .where(
+                Match.status == "FINISHED",
+                (
+                    (Match.home_team_id == match.home_team_id)
+                    & (Match.away_team_id == match.away_team_id)
+                )
+                | (
+                    (Match.home_team_id == match.away_team_id)
+                    & (Match.away_team_id == match.home_team_id)
+                ),
+            )
+            .options(selectinload(Match.home_team), selectinload(Match.away_team))
+            .order_by(Match.utc_date.desc())
+            .limit(8)
+        ).all()
+    )
+
+    # Standings position for both teams
+    home_standing = session.scalar(
+        select(Standing).where(
+            Standing.competition_id == match.competition_id,
+            Standing.team_id == match.home_team_id,
+        )
+    )
+    away_standing = session.scalar(
+        select(Standing).where(
+            Standing.competition_id == match.competition_id,
+            Standing.team_id == match.away_team_id,
+        )
+    )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="match.html",
+        context={
+            "leagues_sidebar": _leagues_summary(session),
+            "match": match,
+            "competition": comp,
+            "color": LEAGUE_COLOR.get(comp.code or "", "#1a1f29") if comp else "#1a1f29",
+            "home_form": home_form,
+            "away_form": away_form,
+            "h2h": h2h,
+            "home_standing": home_standing,
+            "away_standing": away_standing,
         },
     )
 
 
 @dataclass
 class FormResult:
-    outcome: str  # "W" | "D" | "L"
+    outcome: str  # "W" / "D" / "L"
     gf: int
     ga: int
     opp: Team
@@ -185,106 +420,19 @@ def _team_form(
             .where(
                 Match.competition_id == competition_id,
                 Match.status == "FINISHED",
-                or_(Match.home_team_id == team_id, Match.away_team_id == team_id),
+                (Match.home_team_id == team_id) | (Match.away_team_id == team_id),
             )
             .options(selectinload(Match.home_team), selectinload(Match.away_team))
-            .order_by(Match.id.desc())
+            .order_by(Match.utc_date.desc())
             .limit(limit)
         ).all()
     )
     out: list[FormResult] = []
     for m in rows:
         if m.home_team_id == team_id:
-            gf, ga, opp = m.home_score, m.away_score, m.away_team
+            gf, ga, opp = m.home_score or 0, m.away_score or 0, m.away_team
         else:
-            gf, ga, opp = m.away_score, m.home_score, m.home_team
+            gf, ga, opp = m.away_score or 0, m.home_score or 0, m.home_team
         outcome = "W" if gf > ga else ("L" if gf < ga else "D")
-        out.append(FormResult(outcome=outcome, gf=gf or 0, ga=ga or 0, opp=opp, match=m))
-    return list(reversed(out))  # oldest → newest
-
-
-@app.get("/match/{match_id}", response_class=HTMLResponse)
-def match_detail(
-    request: Request,
-    match_id: int,
-    session: Annotated[Session, Depends(get_session)],
-) -> HTMLResponse:
-    match = session.scalar(
-        select(Match)
-        .where(Match.id == match_id)
-        .options(selectinload(Match.home_team), selectinload(Match.away_team))
-    )
-    if match is None:
-        raise HTTPException(status_code=404, detail="Match not found")
-
-    home_form = _team_form(session, match.home_team_id, match.competition_id)
-    away_form = _team_form(session, match.away_team_id, match.competition_id)
-
-    h2h = list(
-        session.scalars(
-            select(Match)
-            .where(
-                Match.status == "FINISHED",
-                or_(
-                    and_(
-                        Match.home_team_id == match.home_team_id,
-                        Match.away_team_id == match.away_team_id,
-                    ),
-                    and_(
-                        Match.home_team_id == match.away_team_id,
-                        Match.away_team_id == match.home_team_id,
-                    ),
-                ),
-            )
-            .options(selectinload(Match.home_team), selectinload(Match.away_team))
-            .order_by(Match.id.desc())
-        ).all()
-    )
-
-    # Team-specific scorers (only those in the competition-wide top scorers table).
-    teams = list(
-        session.scalars(select(Team).where(Team.competition_id == match.competition_id)).all()
-    )
-    teams_by_id = {t.id: t for t in teams}
-    scorers_home = list(
-        session.scalars(
-            select(Scorer).where(Scorer.team_id == match.home_team_id).order_by(Scorer.goals.desc())
-        ).all()
-    )
-    scorers_away = list(
-        session.scalars(
-            select(Scorer).where(Scorer.team_id == match.away_team_id).order_by(Scorer.goals.desc())
-        ).all()
-    )
-    _attach_team_to_scorers(scorers_home + scorers_away, teams_by_id)
-
-    # Head-to-head aggregate
-    home_wins = sum(
-        1
-        for m in h2h
-        if (m.home_team_id == match.home_team_id and (m.home_score or 0) > (m.away_score or 0))
-        or (m.away_team_id == match.home_team_id and (m.away_score or 0) > (m.home_score or 0))
-    )
-    away_wins = sum(
-        1
-        for m in h2h
-        if (m.home_team_id == match.away_team_id and (m.home_score or 0) > (m.away_score or 0))
-        or (m.away_team_id == match.away_team_id and (m.away_score or 0) > (m.home_score or 0))
-    )
-    draws = len(h2h) - home_wins - away_wins
-
-    return templates.TemplateResponse(
-        request=request,
-        name="match_detail.html",
-        context={
-            "match": match,
-            "home_form": home_form,
-            "away_form": away_form,
-            "h2h": h2h,
-            "h2h_home_wins": home_wins,
-            "h2h_away_wins": away_wins,
-            "h2h_draws": draws,
-            "scorers_home": scorers_home,
-            "scorers_away": scorers_away,
-        },
-    )
+        out.append(FormResult(outcome=outcome, gf=gf, ga=ga, opp=opp, match=m))
+    return list(reversed(out))
