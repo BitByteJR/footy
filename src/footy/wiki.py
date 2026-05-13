@@ -214,23 +214,36 @@ def parse_results_matrix(html: str) -> list[dict]:
         matches: list[dict] = []
         for i, full_home in enumerate(rows_full):
             for tla in away_tlas:
-                cell = df.iloc[i][tla]
-                if cell is None or (isinstance(cell, float) and pd.isna(cell)):
-                    continue
-                text = str(cell).strip()
-                m = re.match(r"^\s*(\d+)\s*[–-]\s*(\d+)\s*$", text)
-                if not m:
-                    continue
                 full_away = manual_tla.get(str(tla).upper(), str(tla).upper())
-                matches.append(
-                    {
-                        "home": full_home,
-                        "away": full_away,
-                        "home_score": int(m.group(1)),
-                        "away_score": int(m.group(2)),
-                        "status": "FINISHED",
-                    }
+                if full_home == full_away:
+                    continue  # diagonal, not a fixture
+                cell = df.iloc[i][tla]
+                text = (
+                    ""
+                    if cell is None or (isinstance(cell, float) and pd.isna(cell))
+                    else str(cell).strip()
                 )
+                m = re.match(r"^\s*(\d+)\s*[–-]\s*(\d+)\s*$", text)
+                if m:
+                    matches.append(
+                        {
+                            "home": full_home,
+                            "away": full_away,
+                            "home_score": int(m.group(1)),
+                            "away_score": int(m.group(2)),
+                            "status": "FINISHED",
+                        }
+                    )
+                elif not text or text in {"—", "-", "–"}:
+                    matches.append(
+                        {
+                            "home": full_home,
+                            "away": full_away,
+                            "home_score": None,
+                            "away_score": None,
+                            "status": "SCHEDULED",
+                        }
+                    )
         return matches
     return []
 
@@ -354,7 +367,7 @@ def sync_pl(session) -> dict[str, int]:
                 away_team_id=away.id,
                 home_score=m["home_score"],
                 away_score=m["away_score"],
-                status="FINISHED",
+                status=m["status"],
             )
         )
         saved_matches += 1
