@@ -1,5 +1,6 @@
 # Local development stack for footy.
-# Single service for now (Postgres). Later phases will add the API and workers here.
+# - postgres: the database
+# - api:      the FastAPI app (built from local Dockerfile)
 
 services:
   postgres:
@@ -11,7 +12,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-footy}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-footy_dev_password}
     ports:
-      # Override POSTGRES_PORT in .env if 5432 is already taken on the host.
+      # Override POSTGRES_PORT in .env if the default is already taken on the host.
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -20,6 +21,20 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  api:
+    build: .
+    container_name: footy-api
+    restart: unless-stopped
+    environment:
+      # Inside the compose network the DB hostname is the service name `postgres`,
+      # not localhost — and the port is 5432 (host port mapping doesn't apply here).
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-footy}:${POSTGRES_PASSWORD:-footy_dev_password}@postgres:5432/${POSTGRES_DB:-footy}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres_data:

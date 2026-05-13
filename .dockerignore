@@ -1,0 +1,34 @@
+# VCS
+.git
+.gitignore
+.github
+
+# Local virtualenvs (recreated inside the image)
+.venv
+venv
+
+# Test / lint caches
+.ruff_cache
+.pytest_cache
+.mypy_cache
+__pycache__
+*.pyc
+
+# Editor / OS
+.idea
+.vscode
+.DS_Store
+Thumbs.db
+
+# Secrets / local config
+.env
+.env.local
+*.local
+
+# Files that don't belong inside the image
+tests
+compose.yaml
+Justfile
+.pre-commit-config.yaml
+.python-version
+.omc

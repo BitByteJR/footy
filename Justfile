@@ -83,3 +83,21 @@ migrate-new MESSAGE='change':
 # Show current DB revision
 migrate-status:
     uv run alembic current
+
+# --- Full containerised stack (Phase 3.5) ---
+
+# Build & start the full stack (Postgres + API) in background
+app-up:
+    docker compose up -d --build
+
+# Stop the stack (keep data volume)
+app-down:
+    docker compose down
+
+# Rebuild only the API image and restart it
+app-rebuild:
+    docker compose up -d --build api
+
+# Tail API logs (Ctrl+C to exit)
+app-logs:
+    docker compose logs -f api
