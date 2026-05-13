@@ -7,7 +7,15 @@ authors = [
     { name = "BitByte", email = "bitbyte@server" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "alembic>=1.18.4",
+    "fastapi>=0.136.1",
+    "httpx>=0.28.1",
+    "psycopg[binary]>=3.1",
+    "pydantic-settings>=2.14.1",
+    "sqlalchemy>=2.0",
+    "uvicorn[standard]>=0.46.0",
+]
 
 [project.scripts]
 footy = "footy:main"
@@ -40,3 +48,7 @@ select = [
 
 [tool.ruff.format]
 quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -q"

@@ -65,3 +65,21 @@ db-shell:
 # Show container status / health
 db-status:
     docker compose ps
+
+# --- App / migrations (Phase 2) ---
+
+# Run FastAPI dev server with auto-reload
+dev:
+    uv run uvicorn footy.api:app --reload --host 127.0.0.1 --port 8000
+
+# Apply pending Alembic migrations
+migrate:
+    uv run alembic upgrade head
+
+# Generate a new migration from model diff. Override message with MESSAGE='msg'
+migrate-new MESSAGE='change':
+    uv run alembic revision --autogenerate -m "{{MESSAGE}}"
+
+# Show current DB revision
+migrate-status:
+    uv run alembic current
