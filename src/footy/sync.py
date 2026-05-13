@@ -30,7 +30,12 @@ def _parse_dt(s: str | None) -> datetime | None:
     return datetime.fromisoformat(s.replace("Z", "+00:00"))
 
 
-def _upsert_competition(session: Session, data: dict[str, Any]) -> Competition:
+def _upsert_competition(
+    session: Session,
+    data: dict[str, Any],
+    season: dict[str, Any] | None = None,
+) -> Competition:
+    """Upsert. `season` (from /standings) has `currentMatchday`."""
     comp = session.get(Competition, data["id"])
     if comp is None:
         comp = Competition(id=data["id"])
@@ -39,7 +44,15 @@ def _upsert_competition(session: Session, data: dict[str, Any]) -> Competition:
     comp.name = data["name"]
     comp.area_name = (data.get("area") or {}).get("name", "")
     comp.emblem_url = data.get("emblem")
-    comp.current_matchday = (data.get("currentSeason") or {}).get("currentMatchday")
+    # currentMatchday lives on the `season` envelope from /standings, not on
+    # competition itself.
+    current_md = None
+    if season:
+        current_md = season.get("currentMatchday")
+    if current_md is None:
+        current_md = (data.get("currentSeason") or {}).get("currentMatchday")
+    if current_md is not None:
+        comp.current_matchday = current_md
     return comp
 
 
@@ -85,7 +98,7 @@ def sync_competition(session: Session, code: str) -> dict[str, int]:
     # 1. Standings call also gives us full team roster.
     standings_data = fdo.fetch_standings(code)
     comp_data = standings_data["competition"]
-    comp = _upsert_competition(session, comp_data)
+    comp = _upsert_competition(session, comp_data, season=standings_data.get("season"))
     session.flush()  # comp.id available
 
     # Standings: first item of "standings" array is the TOTAL table.

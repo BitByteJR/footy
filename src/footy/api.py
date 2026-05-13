@@ -92,6 +92,33 @@ def ru_time(d: datetime | None) -> str:
 templates.env.filters["ru_time"] = ru_time
 
 
+def team_name(team) -> str:
+    """Prefer shortName, fall back to name with trailing 'FC' stripped."""
+    if team is None:
+        return "?"
+    if team.short_name:
+        return team.short_name
+    name = team.name or "?"
+    # Strip common suffixes that clutter dense layouts
+    for suffix in (" FC", " F.C.", " AFC", " A.F.C."):
+        if name.endswith(suffix):
+            return name[: -len(suffix)]
+    return name
+
+
+templates.env.filters["team_name"] = team_name
+
+
+SHORT_LEAGUE_NAME = {
+    "CL": "Champions League",
+    "PL": "Premier League",
+    "PD": "La Liga",
+    "BL1": "Bundesliga",
+    "SA": "Serie A",
+    "FL1": "Ligue 1",
+}
+
+
 def _top_competitions(session: Session) -> list[Competition]:
     """Return the top leagues in our preferred display order."""
     by_code = {c.code: c for c in session.scalars(select(Competition)).all() if c.code}
@@ -105,7 +132,7 @@ def _leagues_summary(session: Session) -> list[dict]:
         out.append(
             {
                 "code": c.code,
-                "name": c.name,
+                "name": SHORT_LEAGUE_NAME.get(c.code or "", c.name),
                 "matchday": c.current_matchday,
                 "color": LEAGUE_COLOR.get(c.code or "", "#1a1f29"),
                 "emblem_url": c.emblem_url,
@@ -153,7 +180,7 @@ def index(
             )
             .options(selectinload(Match.home_team), selectinload(Match.away_team))
             .order_by(Match.utc_date.desc())
-            .limit(10)
+            .limit(8)
         ).all()
     )
 
@@ -175,13 +202,17 @@ def index(
             if len(featured) >= 4:
                 break
 
-    # Group upcoming by (date, competition) for the feed.
+    # Group upcoming by (date, competition) for the feed — cap to a sane page length.
+    MAX_FEED_MATCHES = 25
     groups: list[MatchGroup] = []
     by_key: dict[tuple[str, int], MatchGroup] = {}
     comp_by_id = {c.id: c for c in leagues}
+    feed_count = 0
     for m in upcoming:
         if m in featured:
             continue
+        if feed_count >= MAX_FEED_MATCHES:
+            break
         date_key = m.utc_date.strftime("%Y-%m-%d") if m.utc_date else "tba"
         key = (date_key, m.competition_id)
         if key not in by_key:
@@ -194,6 +225,7 @@ def index(
             by_key[key] = grp
             groups.append(grp)
         by_key[key].matches.append(m)
+        feed_count += 1
 
     return templates.TemplateResponse(
         request=request,

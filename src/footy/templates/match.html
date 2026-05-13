@@ -356,7 +356,7 @@
   <div class="m-hero-main">
     <div class="m-team">
       {{ crest(match.home_team, 'xl') }}
-      <div class="nm">{{ match.home_team.name }}</div>
+      <div class="nm">{{ match.home_team|team_name }}</div>
       {% if home_standing %}<div class="pos">№ {{ home_standing.position }} · {{ home_standing.points }} очк.</div>{% endif %}
     </div>
 
@@ -377,7 +377,7 @@
 
     <div class="m-team">
       {{ crest(match.away_team, 'xl') }}
-      <div class="nm">{{ match.away_team.name }}</div>
+      <div class="nm">{{ match.away_team|team_name }}</div>
       {% if away_standing %}<div class="pos">№ {{ away_standing.position }} · {{ away_standing.points }} очк.</div>{% endif %}
     </div>
   </div>
@@ -438,7 +438,7 @@
 
         <div class="form-block">
           <div class="form-head">
-            <span class="team">{{ match.home_team.name }}</span>
+            <span class="team">{{ match.home_team|team_name }}</span>
             <div class="form-chips">
               {% for f in home_form %}<div class="fc-chip {{ f.outcome }}">{{ f.outcome }}</div>{% endfor %}
               {% for _ in range(5 - home_form|length) %}<div class="fc-chip empty">·</div>{% endfor %}
@@ -448,7 +448,7 @@
             {% for f in home_form %}
             <div class="fl-row">
               <span class="fl-dot {{ f.outcome }}"></span>
-              <span class="opp">{{ f.opp.name }}</span>
+              <span class="opp">{{ f.opp|team_name }}</span>
               <span class="res {{ f.outcome }}">{{ f.gf }}:{{ f.ga }}</span>
             </div>
             {% endfor %}
@@ -457,7 +457,7 @@
 
         <div class="form-block">
           <div class="form-head">
-            <span class="team">{{ match.away_team.name }}</span>
+            <span class="team">{{ match.away_team|team_name }}</span>
             <div class="form-chips">
               {% for f in away_form %}<div class="fc-chip {{ f.outcome }}">{{ f.outcome }}</div>{% endfor %}
               {% for _ in range(5 - away_form|length) %}<div class="fc-chip empty">·</div>{% endfor %}
@@ -467,7 +467,7 @@
             {% for f in away_form %}
             <div class="fl-row">
               <span class="fl-dot {{ f.outcome }}"></span>
-              <span class="opp">{{ f.opp.name }}</span>
+              <span class="opp">{{ f.opp|team_name }}</span>
               <span class="res {{ f.outcome }}">{{ f.gf }}:{{ f.ga }}</span>
             </div>
             {% endfor %}
@@ -506,12 +506,12 @@
               <span class="dt">{% if m.utc_date %}{{ m.utc_date.day }}.{{ '%02d' % m.utc_date.month }}{% else %}—{% endif %}</span>
               <div class="s {% if m.winner == 'HOME_TEAM' %}win{% endif %}">
                 {{ crest(m.home_team, 'xs') }}
-                <span class="tn">{{ m.home_team.name }}</span>
+                <span class="tn">{{ m.home_team|team_name }}</span>
               </div>
               <span class="sc">{{ m.home_score }}<span class="sep">:</span>{{ m.away_score }}</span>
               <div class="s r {% if m.winner == 'AWAY_TEAM' %}win{% endif %}">
                 {{ crest(m.away_team, 'xs') }}
-                <span class="tn">{{ m.away_team.name }}</span>
+                <span class="tn">{{ m.away_team|team_name }}</span>
               </div>
             </a>
             {% endfor %}
@@ -534,7 +534,7 @@
             {% for s in [home_standing, away_standing] %}
             <tr>
               <td class="l pos">{{ s.position }}</td>
-              <td class="l"><div class="team-cell">{{ crest(s.team, 'sm') }}{{ s.team.name }}</div></td>
+              <td class="l"><div class="team-cell">{{ crest(s.team, 'sm') }}{{ s.team|team_name }}</div></td>
               <td>{{ s.played }}</td><td>{{ s.won }}</td><td>{{ s.drawn }}</td><td>{{ s.lost }}</td>
               <td class="gd {% if s.goal_difference > 0 %}plus{% elif s.goal_difference < 0 %}minus{% endif %}">{{ '%+d' % s.goal_difference }}</td>
               <td class="pts">{{ s.points }}</td>

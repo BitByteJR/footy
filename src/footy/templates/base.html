@@ -474,7 +474,7 @@
   </div>
   <div class="mr-home {% if m.winner == 'HOME_TEAM' %}win{% elif m.winner == 'AWAY_TEAM' %}lose{% endif %}">
     {{ crest(m.home_team, 'sm') }}
-    <span class="mr-team-name">{{ m.home_team.name if m.home_team else '?' }}</span>
+    <span class="mr-team-name">{{ m.home_team|team_name }}</span>
   </div>
   <div class="mr-score">
     {% if m.status == 'FINISHED' and m.home_score is not none %}
@@ -485,7 +485,7 @@
   </div>
   <div class="mr-away {% if m.winner == 'AWAY_TEAM' %}win{% elif m.winner == 'HOME_TEAM' %}lose{% endif %}">
     {{ crest(m.away_team, 'sm') }}
-    <span class="mr-team-name">{{ m.away_team.name if m.away_team else '?' }}</span>
+    <span class="mr-team-name">{{ m.away_team|team_name }}</span>
   </div>
   <div class="mr-arrow">→</div>
 </a>
