@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project secrets / local config
+.env
+.env.local
+*.local
+
+# Logs
+*.log
+logs/
+
+# Docker / runtime
+*.pid
+
+# oh-my-claudecode runtime state (Claude Code internals)
+.omc/

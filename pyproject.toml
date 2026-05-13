@@ -1,0 +1,42 @@
+[project]
+name = "footy"
+version = "0.1.0"
+description = "Football analytics pet project — DevOps learning playground"
+readme = "README.md"
+authors = [
+    { name = "BitByte", email = "bitbyte@server" }
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+footy = "footy:main"
+
+[build-system]
+requires = ["uv_build>=0.11.14,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.6.0",
+    "pytest>=8.0",
+    "pre-commit>=3.7",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort (import sorting)
+    "B",   # flake8-bugbear (common bugs)
+    "UP",  # pyupgrade (modern Python syntax)
+    "SIM", # flake8-simplify
+]
+
+[tool.ruff.format]
+quote-style = "double"
