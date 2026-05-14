@@ -2,137 +2,78 @@
 {% block title %}footy — главная{% endblock %}
 
 {% block extra_css %}
-.featured {
+/* ── FEATURED (compact, no fold-eaters) ── */
+.featured-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
   border-bottom: 1px solid var(--line);
 }
 .fc {
-  padding: 22px 18px 18px;
-  border-right: 1px solid var(--line);
-  display: flex; flex-direction: column; gap: 16px;
+  --lg-c: #1d232d;
   position: relative;
+  padding: 16px 18px 14px;
+  border-right: 1px solid var(--line);
+  background: var(--bg-1);
   color: inherit;
-  cursor: pointer;
-  transition: background 0.12s;
-  min-height: 220px;
+  display: flex; flex-direction: column; gap: 14px;
+  min-height: 144px;
+  transition: background 0.1s;
 }
 .fc:last-child { border-right: 0; }
-.fc:hover { background: var(--bg-hover); }
-.fc:hover .fc-vs { color: var(--accent); }
+.fc::before {
+  content: ''; position: absolute; inset: 0 0 auto 0; height: 2px; background: var(--lg-c);
+}
+.fc:hover { background: var(--bg-2); }
+.fc:hover .fc-time { color: var(--accent); }
+
 .fc-meta {
   display: flex; align-items: center; gap: 8px;
-  font-family: var(--f-mono);
-  font-size: 10.5px;
-  color: var(--fg-3);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  font-family: var(--f-mono); font-size:11.5px; color: var(--fg-2);
+  text-transform: uppercase; letter-spacing: 0.06em;
 }
-.fc-meta .lg-em { width: 14px; height: 14px; display: inline-grid; place-items: center; }
-.fc-meta .lg-em img { max-width: 100%; max-height: 100%; object-fit: contain; }
-.fc-vs {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 14px;
-  text-align: center;
-  flex: 1;
-}
-.fc-vs .side {
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-}
-.fc-vs .side .nm {
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: -0.005em;
-  line-height: 1.15;
-  color: var(--fg);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  max-width: 100%;
-}
-.fc-vs .mid {
-  font-family: var(--f);
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  color: var(--accent);
-  line-height: 1;
-}
-.fc-vs.played .mid {
-  font-family: var(--f-mono);
-  font-size: 24px;
-  color: var(--fg);
-  font-variant-numeric: tabular-nums;
-}
-.fc-foot {
-  display: flex; flex-direction: column; gap: 4px;
-  border-top: 1px solid var(--line-2);
-  padding-top: 12px;
-  text-align: center;
-}
-.fc-time {
-  font-family: var(--f-mono);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--fg);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
-}
-.fc-venue {
-  font-family: var(--f-mono);
-  font-size: 10px;
-  color: var(--fg-3);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-@media (max-width: 1100px) {
-  .featured { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.fc-meta .sep { color: var(--fg-2); }
+.fc-lg-dot { display: inline-block; width: 6px; height: 6px; background: var(--lg-c); flex-shrink: 0; }
+.fc-lg-name { color: var(--fg-1); font-weight: 600; }
+
+.fc-vs { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px; flex: 1; }
+.fc-side { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.fc-side.r { flex-direction: row-reverse; }
+.fc-nm { font-size:11.5px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
+.fc-side.r .fc-nm { text-align: right; }
+.fc-mid { text-align: center; padding: 0 4px; }
+.fc-time { font-family: var(--f-mono); font-size:11.5px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--fg-0); line-height: 1; }
+.fc-day { margin-top: 4px; font-family: var(--f-mono); font-size:11.5px; color: var(--fg-1); text-transform: uppercase; letter-spacing: 0.06em; }
+
+@media (max-width: 1280px) {
+  .featured-grid { grid-template-columns: repeat(2, 1fr); }
   .fc:nth-child(2) { border-right: 0; }
   .fc:nth-child(1), .fc:nth-child(2) { border-bottom: 1px solid var(--line); }
 }
-@media (max-width: 640px) {
-  .featured { grid-template-columns: 1fr; }
+@media (max-width: 720px) {
+  .featured-grid { grid-template-columns: 1fr; }
   .fc { border-right: 0; border-bottom: 1px solid var(--line); min-height: 0; }
 }
 
-.recent-bar {
-  display: flex;
-  overflow-x: auto;
-  border-bottom: 1px solid var(--line);
+/* ── RECENT BAR ── */
+.recent-bar { display: flex; overflow-x: auto; border-bottom: 1px solid var(--line); background: var(--bg-1); }
+.rb-item {
+  flex: 0 0 auto; width: 218px;
+  padding: 12px 16px; border-right: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 6px; color: inherit;
 }
-.recent-bar .item {
-  flex: 0 0 auto;
-  padding: 14px 18px;
-  border-right: 1px solid var(--line);
-  display: flex; flex-direction: column; gap: 6px;
-  color: inherit;
-  min-width: 200px;
+.rb-item:hover { background: var(--bg-2); }
+.rb-top {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--f-mono); font-size:11.5px; color: var(--fg-1);
+  text-transform: uppercase; letter-spacing: 0.06em;
 }
-.recent-bar .item:hover { background: var(--bg-hover); }
-.recent-bar .item .top {
-  font-family: var(--f-mono);
-  font-size: 9.5px;
-  color: var(--fg-3);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-.recent-bar .item .pair {
-  display: flex; align-items: center; gap: 10px;
-}
-.recent-bar .item .pair .sc {
-  font-family: var(--f-mono);
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--fg);
-  font-variant-numeric: tabular-nums;
-}
-.recent-bar .item .nm {
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-}
+.rb-code { color: var(--fg-1); font-weight: 700; }
+.rb-dot { width: 3px; height: 3px; background: var(--fg-4); border-radius: 50%; }
+.rb-pair { display: grid; grid-template-columns: 16px 1fr 22px; align-items: center; gap: 10px; }
+.rb-nm { font-size:11.5px; font-weight: 500; color: var(--fg-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rb-nm.win { color: var(--fg-0); font-weight: 600; }
+.rb-nm.lose { color: var(--fg-1); }
+.rb-sc { font-family: var(--f-mono); font-size:11.5px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--fg-0); text-align: right; }
 {% endblock %}
 
 {% block content %}
@@ -143,46 +84,41 @@
   <span class="meta">Из топ-лиг</span>
 </div>
 {% if featured %}
-<section class="featured">
+<section class="featured-grid">
   {% for m in featured %}
-  <a class="fc" href="/match/{{ m.id }}">
+    {%- set lg_code = m.home_team.competition.code if m.home_team and m.home_team.competition else None -%}
+    {%- set lg_name = m.home_team.competition.name if m.home_team and m.home_team.competition else 'Лига' -%}
+    {%- set lg_c = LEAGUE_COLOR.get(lg_code, '#1d232d') -%}
+  <a class="fc" href="/match/{{ m.id }}" style="--lg-c: {{ lg_c }};">
     <div class="fc-meta">
-      <span>{{ m.home_team.competition.name if m.home_team and m.home_team.competition else 'Лига' }}</span>
-      {% if m.matchday %}<span>·</span><span>Тур {{ m.matchday }}</span>{% endif %}
+      <span class="fc-lg-dot"></span>
+      <span class="fc-lg-name">{{ lg_name }}</span>
+      {% if m.matchday %}<span class="sep">·</span><span>Тур {{ m.matchday }}</span>{% endif %}
     </div>
-    <div class="fc-vs {% if m.status == 'FINISHED' %}played{% endif %}">
-      <div class="side">
-        {{ crest(m.home_team, 'lg') }}
-        <span class="nm">{{ m.home_team|team_name }}</span>
+    <div class="fc-vs">
+      <div class="fc-side">
+        {{ crest(m.home_team, 'md') }}
+        <span class="fc-nm">{{ m.home_team|team_name }}</span>
       </div>
-      <div class="mid">
-        {% if m.status == 'FINISHED' and m.home_score is not none %}
-          {{ m.home_score }}:{{ m.away_score }}
-        {% else %}
-          VS
-        {% endif %}
+      <div class="fc-mid">
+        <div class="fc-time">{% if m.utc_date %}{{ m.utc_date|ru_time }}{% else %}—{% endif %}</div>
+        <div class="fc-day">{% if m.utc_date %}{{ (m.utc_date|ru_date|replace(' · ', '   ')).split('   ')[0] }}{% else %}TBA{% endif %}</div>
       </div>
-      <div class="side">
-        {{ crest(m.away_team, 'lg') }}
-        <span class="nm">{{ m.away_team|team_name }}</span>
+      <div class="fc-side r">
+        {{ crest(m.away_team, 'md') }}
+        <span class="fc-nm">{{ m.away_team|team_name }}</span>
       </div>
-    </div>
-    <div class="fc-foot">
-      <span class="fc-time">
-        {% if m.utc_date %}{{ m.utc_date|ru_date }} · {{ m.utc_date|ru_time }}{% else %}Дата уточняется{% endif %}
-      </span>
-      {% if m.venue %}<span class="fc-venue">{{ m.venue }}</span>{% endif %}
     </div>
   </a>
   {% endfor %}
 </section>
 {% else %}
-<div style="padding: 60px 22px; text-align: center; color: var(--fg-3); font-family: var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; font-size: 11px;">
+<div style="padding: 60px 22px; text-align: center; color: var(--fg-1); font-family: var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; font-size:11.5px;">
   Нет предстоящих матчей. Запустите <code style="color: var(--accent);">uv run footy</code> для синхронизации.
 </div>
 {% endif %}
 
-{# ─── RECENT RESULTS strip ─── #}
+{# ─── RECENT RESULTS ─── #}
 {% if recent %}
 <div class="sect">
   <h2>Последние результаты</h2>
@@ -190,24 +126,32 @@
 </div>
 <section class="recent-bar">
   {% for m in recent %}
-  <a class="item" href="/match/{{ m.id }}">
-    <div class="top">
-      {{ m.home_team.competition.code if m.home_team and m.home_team.competition else '' }}
-      {% if m.utc_date %}· {{ m.utc_date.day }}.{{ '%02d' % m.utc_date.month }}{% endif %}
+  <a class="rb-item" href="/match/{{ m.id }}">
+    <div class="rb-top">
+      <span class="rb-code">{{ m.home_team.competition.code if m.home_team and m.home_team.competition else '' }}</span>
+      <span class="rb-dot"></span>
+      <span>{% if m.utc_date %}{{ '%02d'|format(m.utc_date.day) }}.{{ '%02d'|format(m.utc_date.month) }}{% endif %}</span>
     </div>
-    <div class="pair">{{ crest(m.home_team, 'xs') }}<span class="nm">{{ m.home_team.name if m.home_team else '?' }}</span></div>
-    <div class="pair"><span class="sc">{{ m.home_score }}:{{ m.away_score }}</span></div>
-    <div class="pair">{{ crest(m.away_team, 'xs') }}<span class="nm">{{ m.away_team.name if m.away_team else '?' }}</span></div>
+    <div class="rb-pair">
+      {{ crest(m.home_team, 'xs') }}
+      <span class="rb-nm {% if m.winner == 'HOME_TEAM' %}win{% elif m.winner == 'AWAY_TEAM' %}lose{% endif %}">{{ m.home_team|team_name }}</span>
+      <span class="rb-sc">{{ m.home_score }}</span>
+    </div>
+    <div class="rb-pair">
+      {{ crest(m.away_team, 'xs') }}
+      <span class="rb-nm {% if m.winner == 'AWAY_TEAM' %}win{% elif m.winner == 'HOME_TEAM' %}lose{% endif %}">{{ m.away_team|team_name }}</span>
+      <span class="rb-sc">{{ m.away_score }}</span>
+    </div>
   </a>
   {% endfor %}
 </section>
 {% endif %}
 
-{# ─── GROUPED FEED ─── #}
+{# ─── SCHEDULE (grouped by date → league) ─── #}
 {% if groups %}
 <div class="sect">
   <h2>Расписание</h2>
-  <span class="meta">По датам · по лигам</span>
+  <span class="meta">По датам   по лигам</span>
 </div>
 {% set ns = namespace(last_date=None) %}
 {% for grp in groups %}
@@ -215,12 +159,15 @@
   <div class="date-strip">{{ grp.label }}</div>
   {% set ns.last_date = grp.date_key %}
   {% endif %}
-  <div class="league-strip">
-    <span class="em">{% if grp.competition.emblem_url %}<img src="{{ grp.competition.emblem_url }}" alt="">{% endif %}</span>
-    <span class="name">{{ grp.competition.name }}</span>
-    <span class="area">{{ grp.competition.area_name }}</span>
-    <span class="spacer"></span>
-    {% if grp.matches[0].matchday %}<span class="meta">Тур {{ grp.matches[0].matchday }}</span>{% endif %}
+  {%- set lg_c = LEAGUE_COLOR.get(grp.competition.code, '#1d232d') -%}
+  <div class="lg-strip" style="--lg-c: {{ lg_c }};">
+    <span class="lg-strip-bar"></span>
+    <span class="lg-strip-em">{% if grp.competition.emblem_url %}<img src="{{ grp.competition.emblem_url }}" alt="">{% endif %}</span>
+    <span class="lg-strip-tla">{{ grp.competition.code }}</span>
+    <span class="lg-strip-name">{{ grp.competition.name }}</span>
+    <span class="lg-strip-area">{{ grp.competition.area_name }}</span>
+    <span></span>
+    {% if grp.matches[0].matchday %}<span class="lg-strip-md">Тур {{ grp.matches[0].matchday }}</span>{% endif %}
   </div>
   {% for m in grp.matches %}{{ match_row(m) }}{% endfor %}
 {% endfor %}
